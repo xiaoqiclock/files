@@ -2,6 +2,7 @@
 """
 GitHub Actions 用索引页生成脚本
 生成与 Apache 风格相同的精简目录列表，并为所有子目录递归生成索引
+确保路径显示为绝对路径（以斜杠开头）
 """
 
 import os
@@ -12,16 +13,23 @@ from datetime import datetime
 # 要忽略的文件和文件夹列表
 ignore_list = {'.git', '.github', 'index.html', '.nojekyll'}
 
-def generate_index(directory):
+def generate_index(directory, base_dir):
     """为指定目录生成索引页面"""
     output_file = directory / "index.html"
-    print(f"正在为目录 {directory} 生成索引...")
+    
+    # 计算相对于基目录的路径，确保以斜杠开头
+    if directory == base_dir:
+        display_path = "/"
+    else:
+        display_path = "/" + str(directory.relative_to(base_dir)) + "/"
+    
+    print(f"正在为目录 {display_path} 生成索引...")
     print(f"输出文件: {output_file}")
 
     # 收集文件和文件夹
     items = []
     for item in directory.iterdir():
-        if item.name in ignore_list:
+        if item.name 在 ignore_list:
             continue
             
         # 获取修改时间
@@ -45,9 +53,9 @@ def generate_index(directory):
     # 如果没有项目，只生成基本的索引页面
     if not items:
         html_content = f"""<html>
-<head><title>Index of {directory}</title></head>
+<head><title>Index of {display_path}</title></head>
 <body>
-<h1>Index of {directory}</h1><hr><pre><a href="../">../</a>
+<h1>Index of {display_path}</h1><hr><pre><a href="../">../</a>
 </pre><hr></body>
 </html>"""
         
@@ -63,9 +71,9 @@ def generate_index(directory):
     
     # 生成精简的 HTML 内容
     html_content = f"""<html>
-<head><title>Index of {directory}</title></head>
+<head><title>Index of {display_path}</title></head>
 <body>
-<h1>Index of {directory}</h1><hr><pre><a href="../">../</a>
+<h1>Index of {display_path}</h1><hr><pre><a href="../">../</a>
 """
 
     # 添加每个项目
@@ -88,14 +96,17 @@ def generate_index(directory):
     # 递归为子目录生成索引
     for item in items:
         if item['is_dir']:
-            generate_index(directory / item['name'].rstrip('/'))
+            generate_index(directory / item['name'].rstrip('/'), base_dir)
 
 # 主程序
 if __name__ == "__main__":
     # 获取命令行参数，如果没有则默认为当前目录
     target_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('.')
     
+    # 设置基目录（用于计算显示路径）
+    base_dir = target_dir
+    
     # 生成索引页面
-    generate_index(target_dir)
+    generate_index(target_dir, base_dir)
     
     print("所有目录的索引页面生成完成！")
