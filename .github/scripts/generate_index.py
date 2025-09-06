@@ -2,7 +2,7 @@
 """
 GitHub Actions 用索引页生成脚本
 生成与 Apache 风格相同的精简目录列表，并为所有子目录递归生成索引
-确保路径显示为绝对路径（以斜杠开头）
+修复中文字符对齐问题
 """
 
 import os
@@ -13,6 +13,17 @@ from datetime import datetime
 # 要忽略的文件和文件夹列表
 ignore_list = {'.git', '.github', 'index.html', '.nojekyll'}
 
+def get_display_width(text):
+    """计算字符串的显示宽度（中文字符算2个宽度，英文字符算1个宽度）"""
+    width = 0
+    for char in text:
+        # 中文字符的 Unicode 范围
+        if '\u4e00' <= char <= '\u9fff' or char in '：；！？（）【】「」《》，。':
+            width += 2
+        else:
+            width += 1
+    return width
+
 def generate_index(directory, base_dir):
     """为指定目录生成索引页面"""
     output_file = directory / "index.html"
@@ -21,7 +32,7 @@ def generate_index(directory, base_dir):
     if directory == base_dir:
         display_path = "/"
     else:
-        display_path = "/" + str(directory.relative_to(base_dir)) + "/"
+        display_path = "/" + str(directory.relative_to(base_dir)).replace("\\", "/") + "/"
     
     print(f"正在为目录 {display_path} 生成索引...")
     print(f"输出文件: {output_file}")
@@ -46,8 +57,8 @@ def generate_index(directory, base_dir):
             'path': name,
             'date': date_str,
             'size': size,
-            'name_length': len(name),
-            'is_dir': is_dir
+            'is_dir': is_dir,
+            'display_width': get_display_width(name)
         })
     
     # 如果没有项目，只生成基本的索引页面
@@ -66,8 +77,8 @@ def generate_index(directory, base_dir):
     # 按名称排序，文件夹在前
     items.sort(key=lambda x: (not x['is_dir'], x['name'].lower()))
 
-    # 找到最长的文件名长度
-    max_name_length = max(item['name_length'] for item in items)
+    # 找到最长的显示宽度
+    max_display_width = max(item['display_width'] for item in items) if items else 0
     
     # 生成精简的 HTML 内容
     html_content = f"""<html>
@@ -79,7 +90,7 @@ def generate_index(directory, base_dir):
     # 添加每个项目
     for item in items:
         # 计算需要的空格数量以确保对齐
-        name_spacing = " " * (max_name_length - item['name_length'] + 50 - max_name_length)
+        name_spacing = " " * (max_display_width - item['display_width'] + 50 - max_display_width)
         date_spacing = " " * (20 - len(item['date']))
         
         html_content += f'<a href="{item["path"]}">{item["name"]}</a>{name_spacing}{item["date"]}{date_spacing}{item["size"]}\n'
