@@ -20,7 +20,7 @@ def format_filename(name, max_width):
     if name_width <= max_width:
         return name
     
-    available_width = max_width - 1
+    available_width = max_width - 3
     
     truncated = ""
     current_width = 0
@@ -34,14 +34,14 @@ def format_filename(name, max_width):
         current_width += char_width
         last_valid_index = i
     
-    if current_width + 3 > available_width:
-        while current_width + 3 > available_width and truncated:
+    if current_width + 2 > available_width:
+        while current_width + 2 > available_width and truncated:
             last_char = truncated[-1]
             truncated = truncated[:-1]
             current_width -= get_east_asian_width_count(last_char)
             last_valid_index -= 1
     
-    return truncated + "..." + ">"
+    return truncated + ".." + ">"
 
 def generate_index(directory, base_dir):
     output_file = directory / "index.html"
@@ -87,7 +87,6 @@ def generate_index(directory, base_dir):
         return
 
     items.sort(key=lambda x: (not x['is_dir'], x['name'].lower()))
-
     max_display_width = max(item['display_width'] for item in items) if items else 0
     max_display_width = min(max_display_width, 50)
     
