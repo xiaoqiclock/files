@@ -4,7 +4,7 @@ import unicodedata
 from pathlib import Path
 from datetime import datetime
 
-ignore_list = {'.git', '.github', 'index.html', '.nojekyll'}
+ignore_list = {'.git', '.github', 'index.html', '.nojekyll', '404.html', '50x.html'}
 
 def get_east_asian_width_count(text):
     count = 0
